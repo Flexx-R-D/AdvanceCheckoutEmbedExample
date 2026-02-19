@@ -9,15 +9,15 @@
   <body>
     <header class="page-header">
       <h1>Advance Checkout Embed</h1>
-      <p>Enter a payment path and click Load to embed the checkout.</p>
+      <p>Enter a checkout URL and click Load to embed the checkout.</p>
     </header>
 
     <div class="controls">
       <input
-        id="path-input"
+        id="url-input"
         type="text"
-        placeholder="/pay/req_abc123"
-        aria-label="Payment path"
+        placeholder="https://app-sandbox.advancehq.com/checkout/abc_123"
+        aria-label="Checkout URL"
       />
       <button id="load-btn">Load</button>
     </div>
@@ -33,42 +33,40 @@
     </div>
 
     <script type="module">
-      import { AdvanceCheckout } from './src/advance-checkout.js';
-      import { EventLogger } from './src/event-logger.js';
+      import { createCheckout } from './src/advance-checkout.js';
+      import { createEventLogger } from './src/event-logger.js';
 
       const containerEl = document.getElementById('checkout-container');
-      const loggerEl = document.getElementById('event-logger');
-      const pathInput = document.getElementById('path-input');
+      const urlInput = document.getElementById('url-input');
       const loadBtn = document.getElementById('load-btn');
 
-      const logger = new EventLogger(loggerEl);
+      const logger = createEventLogger(document.getElementById('event-logger'));
 
-      const checkout = new AdvanceCheckout({ containerEl });
-
-      checkout
-        .on('ready', (payload) => logger.log('ready', payload))
-        .on('success', (payload) => logger.log('success', payload))
-        .on('error', (payload) => logger.log('error', payload))
-        .on('settled', (payload) => logger.log('settled', payload));
+      const checkout = createCheckout({
+        containerEl,
+        onReady:   (payload) => logger.log('ready', payload),
+        onSuccess: (payload) => logger.log('success', payload),
+        onError:   (payload) => logger.log('error', payload),
+        onSettled: (payload) => logger.log('settled', payload),
+      });
 
       function loadCheckout() {
-        const path = pathInput.value.trim();
-
-        if (!path) {
-          pathInput.focus();
+        const url = urlInput.value.trim();
+        if (!url) {
+          urlInput.focus();
           return;
         }
 
-        // Clear placeholder text
+        // Remove placeholder text on first load
         const placeholder = containerEl.querySelector('.placeholder');
         if (placeholder) placeholder.remove();
 
-        checkout.load(path);
-        logger.log('ready', { message: `Loading ${path}…` });
+        checkout.load(url);
+        logger.log('ready', { message: 'Loading ' + url + '…' });
       }
 
       loadBtn.addEventListener('click', loadCheckout);
-      pathInput.addEventListener('keydown', (e) => {
+      urlInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') loadCheckout();
       });
     </script>
