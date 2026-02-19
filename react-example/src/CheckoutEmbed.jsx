@@ -33,9 +33,10 @@ export default function CheckoutEmbed({ url, onReady, onSuccess, onError, onSett
     // The checkout sends messages shaped like:
     //   { type: "advance.checkout.success", payload: { ... } }
     const callbacks = { ready: onReady, success: onSuccess, error: onError, settled: onSettled };
+    const iframeOrigin = new URL(url).origin;
 
     function handleMessage(event) {
-      if (event.origin !== origin) return;
+      if (event.origin !== iframeOrigin) return;
 
       const data = event.data;
       if (!data || typeof data.type !== 'string') return;
