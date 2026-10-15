@@ -6,7 +6,10 @@
 //     onSuccess: (payload) => console.log('Paid!', payload),
 //     onError:   (payload) => console.error('Failed', payload),
 //   });
-//   checkout.load('https://app-sandbox.advancehq.com/checkout/eTqo4dDFVG');
+//   checkout.load('https://app.sandbox.advancehq.com/checkout/eTqo4dDFVG', {
+//     style: { variables: { colorPrimary: '#2563EB' } }, // optional theme
+//     fieldsOnly: true,                                  // optional: payment fields only
+//   });
 //
 //   // Later, to clean up:
 //   checkout.destroy();
@@ -42,17 +45,21 @@ export function createCheckout({ containerEl, onReady, onSuccess, onError, onSet
 
   window.addEventListener('message', handleMessage);
 
-  // Load a checkout URL into the iframe (appends ?embed=true automatically).
-  function load(url) {
+  // Load a checkout URL into the iframe. Sets embed=true, plus style=<JSON> and
+  // fields_only=true when given. Call load() again with new options to re-render.
+  function load(url, { style, fieldsOnly } = {}) {
     if (iframe) {
       iframe.remove();
     }
 
-    origin = new URL(url).origin;
-    const separator = url.includes('?') ? '&' : '?';
+    const src = new URL(url);
+    src.searchParams.set('embed', 'true');
+    if (style) src.searchParams.set('style', JSON.stringify(style));
+    if (fieldsOnly) src.searchParams.set('fields_only', 'true');
+    origin = src.origin;
 
     iframe = document.createElement('iframe');
-    iframe.src = url + separator + 'embed=true';
+    iframe.src = src.toString();
     iframe.style.width = '100%';
     iframe.style.height = '100%';
     iframe.style.border = 'none';
