@@ -29,7 +29,9 @@ npm install
 npm run dev
 ```
 
-Then enter a payment path (e.g. `/pay/req_abc123`), click **Load**, and watch events appear in the log panel.
+Then enter a full checkout URL (e.g. `https://app.sandbox.advancehq.com/checkout/abc_123`), click **Load**, and watch events appear in the log panel.
+
+The React tester also has a **Style** panel: edit the theme JSON (or load a preset), toggle **Payment fields only**, and the iframe reloads with the new URL. The generated `iframe src` is shown above the checkout with a Copy button, and the tester's own page URL keeps the current setup, so you can share a link to it. If the checkout rejects part of the style, its warnings appear under the editor.
 
 ## Configuration
 
@@ -49,8 +51,33 @@ const checkout = createCheckout({
 });
 
 // React
-<CheckoutEmbed path="/pay/req_abc123" baseUrl="http://localhost:3000" />
+<CheckoutEmbed url="http://localhost:3000/checkout/abc_123" />
 ```
+
+## Styling and layout
+
+The checkout reads two optional query params next to `embed=true`:
+
+| Param | Value | Effect |
+|-------|-------|--------|
+| `style` | URL-encoded JSON `{ variables, rules, showPoweredBy }` | Themes the checkout (colors, fonts, radius, per-component rules) |
+| `fields_only` | `true` | Hides the invoice details (summary card) and shows only the payment fields, up to 800px wide |
+
+Both helpers build these for you. Change the options and the iframe reloads with the new URL:
+
+```js
+// Vanilla
+checkout.load(url, { style: { variables: { colorPrimary: '#2563EB' } }, fieldsOnly: true });
+
+// React
+<CheckoutEmbed url={url} style={{ variables: { colorPrimary: '#2563EB' } }} fieldsOnly />
+```
+
+Notes:
+- `style` and `fields_only` only apply when the checkout runs inside an iframe. If you open the same URL in its own tab, you get the default full checkout.
+- Invalid parts of `style` are dropped, and the reasons come back in the `ready` event as `style_warnings`.
+- `style` is limited to 12,000 characters (as JSON). Longer values are ignored.
+- The full list of variables, components, modifiers and fonts is in the React tester under **Style reference** (`react-example/src/styleReference.js`).
 
 ## Events Reference
 
@@ -65,7 +92,7 @@ The checkout iframe sends events via `postMessage`. Each message has the shape:
 
 | Event     | Description                              | Payload                                                    |
 |-----------|------------------------------------------|------------------------------------------------------------|
-| `ready`   | Iframe has loaded and is interactive     | `{}`                                                       |
+| `ready`   | Iframe has loaded and is interactive     | `{}`, or `{ style_warnings: string[] }` if part of `style` was rejected |
 | `success` | Payment was submitted successfully       | `{ paymentId: string, amount: number, currency: string }`  |
 | `error`   | Payment failed or an error occurred      | `{ code: string, message: string }`                        |
 | `settled` | Payment has been fully settled/finalized | `{ paymentId: string, settledAt: string }`                 |
@@ -92,7 +119,10 @@ const checkout = createCheckout({
   onError: (payload) => console.error('Failed', payload),
 });
 
-checkout.load('/pay/req_abc123');
+checkout.load('https://app.sandbox.advancehq.com/checkout/abc_123', {
+  style: { variables: { colorPrimary: '#2563EB' } }, // optional
+  fieldsOnly: true,                                  // optional
+});
 
 // Clean up when done:
 checkout.destroy();
@@ -104,7 +134,9 @@ checkout.destroy();
 import CheckoutEmbed from './CheckoutEmbed.jsx';
 
 <CheckoutEmbed
-  path="/pay/req_abc123"
+  url="https://app.sandbox.advancehq.com/checkout/abc_123"
+  style={{ variables: { colorPrimary: '#2563EB' } }} // optional
+  fieldsOnly                                         // optional
   onSuccess={(payload) => console.log('Paid!', payload)}
   onError={(payload) => console.error('Failed', payload)}
 />
